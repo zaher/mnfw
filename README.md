@@ -3,9 +3,21 @@ Mini Framework
 
 ##Usage
 
-Copy 'public' folder to your site folder in 'inc' folder add new file main.php open this file and add the 'main.php' page as simple html.
+Put all file into 'fw' subfolder in your site or you can create submodule with git, now in your site you must have 'inc' folder, in that folder add new file main.php and open this file, add simple html code there.
 
-Now if you like to divide your html to header and footer with 'main.php', add in your of 'main.php' this lines into it
+    /fw <- here our framework
+    /inc
+    index.php  <- copy it from `fw\core\def\init`
+    .htaccess  <- copy it from `fw\core\def\init`
+
+    and other folder like
+    /css
+    /js
+    /img
+
+For you index, copy from `fw/core/def/init` to the root folder of your project
+
+If you like to divide your html to header and footer with 'main.php', add in your of 'main.php' this lines into it
 
     $app->send_header();
     .

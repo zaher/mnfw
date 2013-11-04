@@ -1,0 +1,44 @@
+## Enable this to restrict editing to logged in users only
+
+## You should disable Indexes and MultiViews either here or in the
+## global config. Symlinks maybe needed for URL rewriting.
+Options -Indexes -MultiViews +FollowSymLinks
+
+## make sure nobody gets the htaccess files
+<Files ~ "^[\._]ht">
+    Order allow,deny
+    Deny from all
+    Satisfy All
+</Files>
+
+<Files ~ "^[\._]php">
+    Order allow,deny
+    Deny from all
+    Satisfy All
+</Files>
+
+## Uncomment these rules if you want to have nice URLs using
+RewriteEngine on
+#
+## Not all installations will require the following line.  If you do, 
+## change "/orders" to the path to your orders directory relative
+## to your document root.
+RewriteBase /
+#
+#RewriteCond %{HTTPS} !=on
+#
+
+#This lines make it portable
+#ref: http://www.zeilenwechsel.de/it/articles/8/Using-mod_rewrite-in-.htaccess-files-without-knowing-the-RewriteBase.html
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond $1#%{REQUEST_URI} ([^#]*)#(.*)\1$
+
+RewriteRule ^(.*)$ %2index.php?id=$1 [QSA,L]
+RewriteRule ^$ %2index.php
+
+#RewriteRule ^$                        index.php  [L]
+#RewriteCond %{REQUEST_FILENAME}       !-f
+#RewriteCond %{REQUEST_FILENAME}       !-d
+#RewriteRule (.*)                      index.php?id=$1  [QSA,L]
+#RewriteRule ^index.php$               index.php
