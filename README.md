@@ -3,9 +3,9 @@ Mini Framework
 
 ##Usage
 
-Put all file into 'fw' subfolder in your site or you can create submodule with git, now in your site you must have 'inc' folder, in that folder add new file main.php and open this file, add simple html code there.
+Put all files into 'fw' subfolder in your site or you can create submodule with git, now in your site you must have 'inc' folder, in that folder add new file main.php and open this file then write some simple html code there.
 
-    /fw <- here our framework
+    /fw <- here is the framework
     /inc
     index.php  <- copy it from `fw\core\def\init`
     .htaccess  <- copy it from `fw\core\def\init`
@@ -15,7 +15,7 @@ Put all file into 'fw' subfolder in your site or you can create submodule with g
     /js
     /img
 
-For you index, copy from `fw/core/def/init` to the root folder of your project
+For your index, copy from `fw/core/def/init` to the root folder of your project, you can change it and keep your eyes on the original one because we may change it for improvements.
 
 If you like to divide your html to header and footer with 'main.php', add in your of 'main.php' this lines into it
 
@@ -25,7 +25,7 @@ If you like to divide your html to header and footer with 'main.php', add in you
     .
     $app->send_header();
 
-Framework now send a default html header or footer, but you can add the 'header-html.php' or 'footer.php' in your 'inc' folder to load it instead of the default one
+Framework now will send a default html header or footer, but you can add the 'header-html.php' or 'footer.php' in your 'inc' folder to load it instead of the default one.
 
 You can send header without sending footer, framework will send it automatically
 
@@ -37,7 +37,7 @@ If you want to not send it add this '$app->auto_send = false' at the top of your
 
 ####Adding new page
 
-Simple add new file 'simple.php' (for example) in you 'inc' folder as same of main, now it is work.
+Simple, add new file 'simple.php' (for example) in you 'inc' folder as same as main.php, now it is work.
 
 ####Config file
 
