@@ -4,13 +4,16 @@
 *
 */
 
-/**
+/*
 * http://php.net/manual/en/language.oop5.properties.php
+*
 */
 
 function __($word) {
   return $word;
 }
+
+require_once(__DIR__.'/ui.php');
 
 class JS {
   protected $app = null;
@@ -104,6 +107,7 @@ class App {
   public $styles = array(); //css
   public $scripts = array(); //scripts file
   public $meta = array();
+  public $libs = array();
 
   public $name = '';
   public $title = '';
@@ -113,31 +117,31 @@ class App {
   public $page = null;
 
   public $root = ''; //the root dir of ur application site
-  /**
-   * Where your html files and template usually "inc" or "app"
-   */
+/**
+ * Where your html files and template usually "inc" or "app"
+ */
   public $app_dir = ''; 
-  /**
-   *  Framework dir is where the public folder of the framework, if you can muliple project based
-   *  On this framework, you can point to it here, 
-   *  Core files also detected from here but also you can move the core files to another directory   * 
-   */
+/**
+ *  Framework dir is where the public folder of the framework, if you can muliple project based
+ *  On this framework, you can point to it here,
+ *  Core files also detected from here but also you can move the core files to another directory   *
+*/
   public $fw_dir = ''; 
-  /**
-   *  fw_url The full url your framework the public folder
-   * 
-   */
+/**
+ *  fw_url The full url your framework the public folder
+ *
+ */
   public $fw_url = ''; //url to framework, useful to get css and scripts
-  /**
-   *  core_dir Where the core of framework found, it is part of framework but you can hide it in another folder
-   *  It is auto detect from fw_dir, but you can change it in the setting.php
-   * 
-   */
+/**
+ *  core_dir Where the core of framework found, it is part of framework but you can hide it in another folder
+ *  It is auto detect from fw_dir, but you can change it in the setting.php
+ *
+ */
   public $core_dir = '';
-  /**
-  *  When sending run or execute if no page define we will load $default_page
-  *
-  */
+/**
+*  When sending run or execute if no page define we will load $default_page
+*
+*/
   public $default_page = 'index';
 
   public $domain = '';
@@ -152,11 +156,11 @@ class App {
   public $auto_send = true;
 
 /**
-  $root: Full path to your site dir
-  $app_dir: Full path to direcory of application files may be under the root, file like "app" folder or "inc"
-  partial path next to the domain like "sales" that apear under the domain, example www.mydomain.com/sales
-
+*  $root: Full path to your site dir
+*  $app_dir: Full path to direcory of application files may be under the root, file like "app" folder or "inc"
+*  partial path next to the domain like "sales" that apear under the domain, example www.mydomain.com/sales
 */
+
   function __construct($root, $app_dir, $title, $name = '') {
     $this->root = inc_delimiter($root); //TODO: we must check if / terminated
     $this->app_dir = inc_delimiter($app_dir);
@@ -177,6 +181,8 @@ class App {
 
     $this->safe_use('config');
 
+    $this->libs['ui'] = $this->core_dir.'ui/ui.php';
+
     $this->init();
 
   }
@@ -190,20 +196,20 @@ class App {
     //not needed but for backlegacy
     define('_APP_', $this->app_dir);
     define('_ROOT_', $this->fw_dir);
-    
+
     //auto detect style
     if (file_exists($this->root.'style.css')) {
-      $this->styles['style'] = $url.'style.css';
+      $this->styles['style'] = $this->url.'style.css';
     } else if (file_exists($this->root.'css/style.css')) {
-      $this->styles['style'] = $url.'css/style.css';
+      $this->styles['style'] = $this->url.'css/style.css';
     }
 
     $this->scripts['fw_script'] = $this->fw_url.'js/script.js';
 
     if (file_exists($this->root.'scripts.js')) {
-      $this->scripts['app_script'] = $url.'script.js';
+      $this->scripts['app_script'] = $this->url.'script.js';
     } else if (file_exists($this->root.'js/script.js')) {
-      $this->scripts['app_script'] = $url.'js/script.js';
+      $this->scripts['app_script'] = $this->url.'js/script.js';
     }
 
     $this->js = new JS($this);
@@ -217,7 +223,8 @@ class App {
     if (isempty($this->conf['prefix']))
       $this->conf['prefix'] = '';
 
-    $this->lang = $this->conf['lang'];
+    if (isset($this->conf['lang']))
+      $this->lang = $this->conf['lang'];
 
   }
 
@@ -229,19 +236,21 @@ class App {
     $GLOBALS['session'] = &$this->db->session;
   }
 
-  /**
-   * Require once the file, not safe.
-   * It needs full path to the file.
-   */
+/**
+ * Require once the file, not safe.
+ * It needs full path to the file.
+*/
+
   public function require_file($name) {
     global $app;
     require_once($name);
   }
 
-  /**
-   * Include the file if exists.
-   * It needs full path to the file.
-   */
+/**
+ * Include the file if exists.
+ * It needs full path to the file.
+ */
+
   public function safe_include($name) {
     global $app;
     if (file_exists($name))
@@ -257,6 +266,13 @@ class App {
       }
     }
     return $f;
+  }
+
+  public function use_lib($name) {
+    if (!array_key_exists($name, $this->libs))
+      throw new Exception($name . ' lib not found');
+    global $app;
+    require_once($this->libs[$name]);
   }
 
   public function use_file($name) {
@@ -285,9 +301,9 @@ class App {
       return false;
   }
 
-  /**
-  *  Send the page file and fall into 404 page if not exists
-  */
+/**
+*  Send the page file and fall into 404 page if not exists
+*/
   public function safe_send($name, $fall = true) {
     $f = $this->get_use_file($name);
     if ($fall && (empty($f) || (!file_exists($f)))) {
@@ -390,11 +406,14 @@ class App {
       $this->safe_send($page);
 
     } catch (Exception $e) {
-      echo htmlentities($e->getMessage(), ENT_HTML5);
-      $this->safe_footer();
+      $this->send_header();
+      echo htmlentities($e->getMessage(), ENT_COMPAT); // ENT_HTML5
+      if (function_exists('xdebug_is_enabled'))
+        xdebug_break();
+      $this->send_footer();
     }
 
-    if ($auto_send) {
+    if ($this->auto_send) {
       if ($this->header_sent) //Yes we checking header, if not we will not auto send footer
         $this->send_footer();
     }
@@ -412,7 +431,6 @@ class App {
     $this->last_page = $page;
 
     if (!$this->header_sent) {
-      $this->safe_send('header');
       $this->safe_use('functions');
       $this->header_sent = true;
     }
@@ -455,11 +473,19 @@ class App {
 
   //Run will send the header footer for page
   public function run() {
-    $this->send_html($_GET['id']);
+    if (isset($_GET['id']))
+      $page = $_GET['id'];
+    else
+      $page = '';
+    $this->send_html($page);
   }
 
   public function execute() {
-    $this->send_page($_GET['id']);
+    if (isset($_GET['id']))
+      $page = $_GET['id'];
+    else
+      $page = '';
+    $this->send_page($page);
   }
 
   public function get_page_title() {
@@ -709,5 +735,10 @@ function url_page($page, $params = null, $dir = null, $domain = null)
   }
   return $r;
 }
-
+/*
+function exception_error_handler($errno, $errstr, $errfile, $errline ) {
+    throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
+}
+set_error_handler("exception_error_handler");
+*/
 ?>
