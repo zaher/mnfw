@@ -1,7 +1,7 @@
 <?php
   include_once(__DIR__.'/fw/fw.php');
 
-  $app = new App(__DIR__, __DIR__.'/inc', 'Creative Solutions');
+  $app = new App(__DIR__, __DIR__.'/inc', 'My Application');
   $app->default_page = 'main';
   //Optional paths
   //$app->url_dir = Optional, it can be detected from the root

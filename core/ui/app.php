@@ -147,8 +147,6 @@ class App {
 
   public $lang = 'en';
 
-  protected $header_html_sent = false;
-  protected $footer_html_sent = false;
   protected $header_sent = false;
   protected $footer_sent = false;
   public $auto_send = true;
@@ -287,8 +285,15 @@ class App {
       return false;
   }
 
-  public function safe_send($name) {
+  /**
+  *  Send the page file and fall into 404 page if not exists
+  */
+  public function safe_send($name, $fall = true) {
     $f = $this->get_use_file($name);
+    if ($fall && (empty($f) || (!file_exists($f)))) {
+      $f = $this->get_use_file('404');
+    }
+
     if (!empty($f)) {
       $this->make_globals();
       $user = &$this->user;
@@ -325,84 +330,79 @@ class App {
     }
   }
 
+/**
+*  Send Header and Footer
+*/
+
   public function send_header($force=false) {
-    $this->safe_send('header.html');
-    $this->header_html_sent = true;
+    if ($force || !$this->header_sent) {
+      $this->header_sent = true; //Here to prevent the loop, now it is send
+      $this->safe_send('header.html');
+    }
   }
 
   public function send_footer($force=false) {
-    $this->safe_send('footer.html');
-    $this->footer_sent = true;
+    if ($force || !$this->footer_sent) {
+      $this->footer_sent = true; //Here to prevent the loop
+      $this->safe_send('footer.html');
+    }
   }
 
+/**
+*   Send Full Html or one Page
+*/
+
   public function send_html($page = '') {
-    if (empty($page)) {
+    if (empty($page))
       $page = $this->default_page;
-    }
+
     $this->last_page = $page;
     $this->ref = $page;
     $this->page->url = $this-> $this->url.$page;
 
-    if (!$this->header_sent) {
-      $this->safe_send('header');
-      $this->safe_require('functions');
-      $this->header_sent = true;
-    }
-
+    $this->safe_require('functions');
     $this->send_header();
+
     try {
-      $f = $this->get_use_file($page);
-      if (file_exists($f)) {
-        $this->safe_send('top.html');
-        $this->safe_send($page);
-        $this->safe_send('bottom.html');
-      }
-      else
-        $this->safe_send('404');
-
+      $this->safe_send('top.html');
+      $this->safe_send($page);
+      $this->safe_send('bottom.html');
     } catch (Exception $e) {
-      $this->safe_send('header');
       echo htmlentities($e->getMessage(), ENT_HTML5);
-      $this->safe_send('footer');
-    }
-//    finally {
-
       $this->send_footer();
-
-      if (!$this->footer_sent) {
-        $this->safe_send('footer');
-        $this->footer_sent = true;
-      }
-//    }
+    }
+//    finally { }
+    $this->send_footer();
   }
 
+/**
+*  Send one page
+*  Send the page without sending header, but it will send the footer of auto_send is true and the header was send before
+*/
 
   public function send_page($page = '') {
-    if (empty($page)) {
+    if (empty($page))
       $page = $this->default_page;
-    }
 
-    if (!$this->header_sent) {
-      $this->safe_send('header');
-      $this->safe_use('functions');
-      $this->header_sent = true;
-    }
+    $this->safe_use('functions');
 
-    $f = $this->get_use_file($page);
-    if (file_exists($f))
+    try {
       $this->safe_send($page);
-    else
-      $this->safe_send('404');
 
+    } catch (Exception $e) {
+      echo htmlentities($e->getMessage(), ENT_HTML5);
+      $this->safe_footer();
+    }
 
-    if ($this->header_html_sent) //maybe with options
-      $this->send_footer();
-
-    if (!$this->footer_sent) {
-      $this->safe_send('footer');
-      $this->footer_sent = true;
+    if ($auto_send) {
+      if ($this->header_sent) //Yes we checking header, if not we will not auto send footer
+        $this->send_footer();
     }
   }
+
+/**
+*
+*/
 
   public function send_action($page = '') {
     if (empty($page)) {
@@ -607,10 +607,6 @@ class User {
 *
 */
 
-function print_quote($v, $q='"') {
-  print $q.$v.$q;
-}
-
 function get_request($name, &$value, $default = '')
 {
   if (array_key_exists($name, $_REQUEST))
@@ -637,13 +633,6 @@ function get_value($array, $name, &$value)
     $value = '';
     return false;
   }
-}
-
-//and sign & for remove the hint about variable not have a value
-function print_value(&$value, $extra = '')
-{
-  if (isset($value) && !empty($value))
-    print($value.$extra);
 }
 
 function redirect($redirect_url)

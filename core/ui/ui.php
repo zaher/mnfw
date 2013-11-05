@@ -5,6 +5,39 @@
     $object->render();
   }
 
+function print_quote($v, $q='"') {
+  print $q.$v.$q;
+}
+
+/**
+* Test the value then print name="value" with quote
+* Useful for generate HTML
+*/
+
+function print_value($name, $value, $extra = '', $q='"')
+{
+  if (isset($value) && !empty($value))
+  {
+    if (!empty($name))
+      print($name.'=');
+    print_quote($value.$extra);
+  }
+}
+
+/** Same above but add space before printing
+*/
+function _print_value($name, $value, $q='"') {
+  if (isset($value) && !empty($value))
+    print " ";
+  print_value_($name, $value, $q);
+}
+
+
+
+/**
+*   Base Classes
+*/
+
   class View {
     protected $app = null;
 
@@ -20,7 +53,7 @@
         $this->$attribute = $value;
       }*/
 
-      if (method_exists($this, 'init'))
+      if (method_exists($this, 'init')) //only for user define classes in his project
         $this->init();
     }
 
@@ -104,10 +137,11 @@
     }
   }
 
-  class ComboBox extends View {
+/**
+*  UI classes
+*/
 
-    public function init() {
-    }
+  class SelectView extends View {
 
     public function do_render() {
 
@@ -131,13 +165,21 @@
     }
   }
 
-  function print_edit($id, $class, $label = '', $value = '') {
-    if (!empty($label)) {
-    ?>
-    <label for=<?php print_quote($id); ?> > <?php print $label; ?></label>
-    <?php } ?>
-    <input type="text" class=<?php print_quote($class) ?> id=<?php print_quote($id) ?> name=<?php print_quote($id) ?> <?php if(!empty($value)) { print 'value="'.$value.'"'; } ?> />
-  <?php
+  class InputView extends View {
+
+    public function do_render() {
+      if (!empty($this->label)) {
+      ?>
+      <label <?php print_value('for', $this->id); ?>> <?php print $this->label; ?></label>
+      <?php }
+        if (isset($this->type))
+          $type = $this->type;
+        else
+          $type = 'text';
+      ?>
+      <input <?php print_value('type', $type); _print_value('class', $this->class); _print_value('id', $this->id); _print_value('id', $this->id); _print_value('value', $this->value); ?> />
+      <?php
+    }
   }
 
   /**
