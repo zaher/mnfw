@@ -25,10 +25,3 @@ function loadScript(name, url, callback = null){
     script.src = url;
     document.getElementsByTagName("head")[0].appendChild(script);
 }
-
-function itemShowHide(id){
-  if(document.getElementById(id).style.display=='')
-    document.getElementById(id).style.display='none';
-  else
-    document.getElementById(id).style.display='';
-}

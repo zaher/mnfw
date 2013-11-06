@@ -1,7 +1,6 @@
 <?php
 /**
 *  Base class of framework.
-*
 */
 
 /*
@@ -9,14 +8,34 @@
 *
 */
 
+
 function __($word) {
   return $word;
 }
 
 require_once(__DIR__.'/ui.php');
 
+class Script {
+  public $name = '';
+  public $code = '';
+  public $is_used = false;
+  function __construct($name, $code) {
+    $this->name = $name;
+    $this->code = $code;
+  }
+
+  public function render() {
+  ?>
+    <script>
+    <?php print($this->code); ?>
+    </script>
+  <?php
+  }
+}
+
 class JS {
   protected $app = null;
+  public $scripts = array();
 
   function __construct($app) {
     $this->app = $app;
@@ -25,11 +44,24 @@ class JS {
   function __destruct() {
   }
 
-  public function load_script($name, $script) {
-  ?>
-  <script type="text/javascript">loadScript(<?php print_quote($name) ?>, <?php print_quote($this->url.$script) ?>, function(){});</script>
-  <?php
+  public function add($name, $code) {
+    $script = new Script($name, $code);
+    if (array_key_exists($name, $this->scripts))
+      throw new Exception($name.' is already exists');
+
+    $this->scripts[$name] = $script;
   }
+
+  public function use_it($name, $force = false) {
+    if (!array_key_exists($name, $this->scripts))
+      throw new Exception($name.' is not exists');
+    $script = $this->scripts[$name];
+    if ($force || !$script->is_used) {
+      $script->render();
+      $script->is_used = true;
+    }
+  }
+
 }
 
 class Database {
@@ -735,6 +767,7 @@ function url_page($page, $params = null, $dir = null, $domain = null)
   }
   return $r;
 }
+
 /*
 function exception_error_handler($errno, $errstr, $errfile, $errline ) {
     throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
