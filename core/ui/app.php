@@ -8,7 +8,6 @@
 *
 */
 
-
 function __($word) {
   return $word;
 }
@@ -112,6 +111,7 @@ class Database {
 class Page {
   protected $app = null;
   public $title = '';
+  public $description = '';
   public $url = '';
   public $forms = array();
 
@@ -386,12 +386,14 @@ class App {
     if ($force || !$this->header_sent) {
       $this->header_sent = true; //Here to prevent the loop, now it is send
       $this->safe_send('header.html');
+      $this->safe_send('page-header.html');
     }
   }
 
   public function send_footer($force=false) {
     if ($force || !$this->footer_sent) {
       $this->footer_sent = true; //Here to prevent the loop
+      $this->safe_send('page-footer.html');
       $this->safe_send('footer.html');
     }
   }

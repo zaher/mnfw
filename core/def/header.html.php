@@ -6,6 +6,4 @@
   <?php $app->send_styles(); ?>
   <?php $app->send_scripts(); ?>
 </head>
-<body>
-<!-- start -->
 <?php ?>
