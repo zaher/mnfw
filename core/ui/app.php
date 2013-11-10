@@ -110,10 +110,13 @@ class Database {
 
 class Page {
   protected $app = null;
+
   public $title = '';
   public $description = '';
   public $url = '';
-  public $forms = array();
+  /** Current opened form **/
+  public $form = null;
+//  public $forms = array();
 
   function __construct($app) {
   }

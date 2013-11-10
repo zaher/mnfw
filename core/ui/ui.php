@@ -40,7 +40,8 @@ function print_value($name, $value, $extra = '', $q='"')
   }
 }
 
-/** Same above but add space before printing
+/**
+* Same above but add space before printing
 */
 function _print_value($name, $value, $q='"') {
   if (isset($value) && !empty($value))
@@ -55,6 +56,7 @@ function _print_value($name, $value, $q='"') {
   class View {
 
     protected $app = null;
+    public $parent = null;
 
     public $attributes = array();
     public $render_func = null;
@@ -154,7 +156,11 @@ function _print_value($name, $value, $q='"') {
 
   class FormView extends View {
 
+    public $requires = array();
+
     public function do_open() {
+      $app->page->form = $this; //TODO check of it is exists
+
       if (isset($this->label)) {
       ?>
       <label <?php print_value('for', $this->name); ?> > <?php print $this->label; ?></label>
@@ -169,6 +175,30 @@ function _print_value($name, $value, $q='"') {
       <input type="submit" <?php print_value('value', $this->submit); ?> />
       <?php } ?>
       </form>
+    <?php
+      $app->page->form = null;
+    }
+  }
+
+  class AjaxFormView extends FormView {
+    public function do_open() {
+    ?>
+    <div>
+    <div class="error-panel" style="display:none">Error</div>
+    <?php
+      parent::do_open();
+    }
+    public function do_close() {
+      parent::do_close();
+    print_r($this->requires);
+/*    if (isset($this->container)) {
+    ?>
+    <div <?php print_value("id", $this->container) ?> class="form-content"></div>
+    <?php
+    } */
+    ?>
+    <script>ajaxAttachForm(<?php print_quote('#'.$this->id); if (isset($this->container)) { print(', '); print_quote('#'.$this->container); } ?>)</script>
+    </div>
     <?php
     }
   }
@@ -204,6 +234,10 @@ function _print_value($name, $value, $q='"') {
   class InputView extends View {
 
     public function do_render() {
+      if ($this->is_require) {
+        if (isset($app->page->form))
+          $app->page->form->requires[] = $this->name;
+      }
       if (!empty($this->label)) {
       ?>
       <label <?php print_value('for', $this->id); ?>> <?php print $this->label; ?></label>
