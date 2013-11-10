@@ -4,6 +4,8 @@
 * $value is an attrubute of this object but you can pass render function instead of it
 */
 
+$form = null;
+
 function render($class, $value = null, $func = null) {
   if (is_array($value))
     $attributes = $value;
@@ -159,6 +161,7 @@ function _print_value($name, $value, $q='"') {
     public $requires = array();
 
     public function do_open() {
+      global $app;
       $app->page->form = $this; //TODO check of it is exists
 
       if (isset($this->label)) {
@@ -170,6 +173,7 @@ function _print_value($name, $value, $q='"') {
     }
 
     public function do_close() {
+      global $app;
       if (isset($this->submit)) {
       ?>
       <input type="submit" <?php print_value('value', $this->submit); ?> />
@@ -190,7 +194,7 @@ function _print_value($name, $value, $q='"') {
     }
     public function do_close() {
       parent::do_close();
-    print_r($this->requires);
+//    print_r($this->requires);
 /*    if (isset($this->container)) {
     ?>
     <div <?php print_value("id", $this->container) ?> class="form-content"></div>
@@ -234,6 +238,7 @@ function _print_value($name, $value, $q='"') {
   class InputView extends View {
 
     public function do_render() {
+      global $app;
       if ($this->is_require) {
         if (isset($app->page->form))
           $app->page->form->requires[] = $this->name;
