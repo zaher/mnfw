@@ -1,14 +1,27 @@
 "use strict";
 
-function ajaxSubmitForm(form, event, do, container) {
+/**
+*
+*  do_it: add to the action
+*  requires: object have array of requires fields to check it
+*/
+
+function ajaxSubmitForm(event, do_it, requires, container)
+{
+  var form = event.target;
+
+  if (requires.length > 0) {
+    validateForm(event, requires);
+  }
 
   var url = form.action;
 
   var formData = form.serialize();
 
   formData = "_ajax_=1&" + formData;
-  if (do !== undefined) {
-    formData = "do=" + do + formData;
+
+  if (do_it !== undefined) {
+    formData = "do=" + do_it + formData;
   }
 
   $.ajax({
@@ -23,12 +36,12 @@ function ajaxSubmitForm(form, event, do, container) {
   event.preventDefault();
 }
 
-function ajaxAttachForm(id, do, container) {
+function ajaxAttachForm(id, do_it, requires, container) {
 //  document.getElementByName(id).onclick = ajaxSubmitForm;
   var form = $(id) || null;
   if (form !== null) {
     form.submit(function(event){
-        ajaxSubmitForm(form, event, do, container);
+        ajaxSubmitForm(event, do_it, requires, container);
       })
   }
   else {
@@ -36,8 +49,20 @@ function ajaxAttachForm(id, do, container) {
   }
 }
 
+function attachForm(id, requires) {
+//  document.getElementByName(id).onclick = ajaxSubmitForm;
+  var form = $(id) || null;
+  if (form !== null) {
+    form.submit(function(event){
+        validateForm(event, requires);
+      })
+  }
+  else {
+    alert("Can not find " + id);
+  }
+}
 
-function validateForm(form, fields) {
+function validateForm(event, requires) {
 
 }
 

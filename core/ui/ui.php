@@ -15,7 +15,7 @@ function render($class, $value = null, $func = null) {
   $object = new $class($attributes);
 
   if (is_callable($value)) {
-    $object->call($value);
+    $value($object);
   }
 
   if (is_callable($func))
@@ -32,8 +32,8 @@ function print_quote($v, $q='"') {
 * Example: print_param(', ', $value)
 */
 
-function print_param($before, $v, $q='"') {
-  if (isset($v))
+function print_param($before, $v, $force = false, $q = '"') {
+  if ($force || isset($v))
     print $before.$q.$v.$q;
 }
 
@@ -149,11 +149,14 @@ function _print_value($name, $value, $q='"') {
 
     public function render() {
       $this->open();
-      if (method_exists($this, 'do_render'))
-        $this->do_render();
+
       $render_func = $this->render_func;
       if (is_callable($render_func))
-        $render_func();
+        $render_func($this);
+
+      if (method_exists($this, 'do_render'))
+        $this->do_render();
+
       $this->close();
     }
 
@@ -179,6 +182,27 @@ function _print_value($name, $value, $q='"') {
   class FormView extends View {
 
     public $requires = array();
+
+    function need_script(){
+      return sizeof($this->requires) > 0;
+    }
+
+    function generate_requires() {
+      $i = 0;
+    ?>
+        var requires= new Object();
+        <?php if(sizeof($this->requires) > 0) { ?>
+        requires.fields = new Array();
+        <?php foreach($this->requires as $v) { ?>
+        requires.fields[<?php print($i); $i++ ?>] = <?php print_quote($v) ?>;
+     <?php
+        }
+      }
+    }
+
+    function generate_script() {
+      ?> attachForm(<?php print_quote('#'.$this->id);?>, requires); <?php
+    }
 
     function get_action() {
       $action = $this->action;
@@ -209,7 +233,16 @@ function _print_value($name, $value, $q='"') {
       if (isset($this->submit)) {
       ?>
       <input type="submit" <?php print_value('value', $this->submit); ?> />
-      <?php } ?>
+      <?php }
+        if ($this->need_script()) {
+      ?>
+      <script>
+      <?php $this->generate_requires(); ?>
+      <?php $this->generate_script(); ?>
+      </script>
+       <?php
+       }
+       ?>
       </form>
     <?php
       $app->page->form = null;
@@ -219,6 +252,21 @@ function _print_value($name, $value, $q='"') {
 /** Ajax form */
 
   class AjaxFormView extends FormView {
+
+    function need_script(){
+      return true;
+    }
+
+    function generate_script() {
+    ?>
+      ajaxAttachForm(<?php
+        print_quote('#'.$this->id, true);
+        print_param(', ', $this->do, true);
+        ?>, requires <?php
+        print_param(', ', $this->container);
+      ?>)
+    <?php
+    }
 
     function get_action() {
       return $this->action;
@@ -240,12 +288,6 @@ function _print_value($name, $value, $q='"') {
     <?php
     } */
     ?>
-    <script>ajaxAttachForm(<?php
-        print_quote('#'.$this->id);
-        print_param(', ', $this->do);
-        print_param(', ', $this->container);
-      ?>)
-    </script>
     </div>
     <?php
     }
