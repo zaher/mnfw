@@ -170,9 +170,9 @@ class session_class
     return $cmd;
   }
 
-  /**
-    for install script
-  */
+/**
+  for install script
+*/
 
   public function run($sql)
   {
@@ -223,9 +223,9 @@ class command_class
     $this->close();
   }
 
-  /**
-  * $cond is array of conditions
-  */
+/**
+* $cond is array of conditions
+*/
   public function add_where($cond, $equal = '=') {
     $sql = '';    
     foreach ($cond as $name => $value) {
@@ -343,11 +343,11 @@ class command_class
     return $r;
   }
   
-  /**
+/**
    * Call back all rows   * 
    * @param function $func($count)
    */
-  public function rows_cb($func) {    
+  public function rows_every($func) {
     $count = 0;
       while(!$this->eof) {
         $func($count);
@@ -355,11 +355,11 @@ class command_class
       $this->next();
     }
   }
-  /**
+/**
    * Call back fields and values
    * @param function $func($name, $value)
    */
-  public function fields_cb($func, $fields = null) {
+  public function fields_every($func, $fields = null) {
     foreach ($this->fields as $name => $value) {
       if (!isset($fields) || in_array($name, $fields))
         $func($name, $value);

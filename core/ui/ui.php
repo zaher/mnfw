@@ -233,6 +233,7 @@ function _print_value($name, $value, $q='"') {
       if (isset($this->submit)) {
       ?>
       <input type="submit" <?php print_value('value', $this->submit); ?> />
+      </form>
       <?php }
         if ($this->need_script()) {
       ?>
@@ -243,7 +244,6 @@ function _print_value($name, $value, $q='"') {
        <?php
        }
        ?>
-      </form>
     <?php
       $app->page->form = null;
     }
@@ -258,13 +258,15 @@ function _print_value($name, $value, $q='"') {
     }
 
     function generate_script() {
+//      parent::generate_script();
     ?>
+
       ajaxAttachForm(<?php
-        print_quote('#'.$this->id, true);
+        print_quote('#'.$this->id);
         print_param(', ', $this->do, true);
-        ?>, requires <?php
-        print_param(', ', $this->container);
-      ?>)
+        ?>, requires<?php
+        print_param(', ', '#'.$this->container);
+      ?>);
     <?php
     }
 

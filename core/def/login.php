@@ -1,5 +1,5 @@
 <?php
-  if (!isempty($_POST['user'])) {
+  if (!empty($app->req->user)) {
     $app->db->open();
     if ($app->user->login($_POST['user'], $_POST['password'])) {
       $app->redirect($_REQUEST['ref']);
@@ -21,11 +21,11 @@
   }
 ?>
 <div class="login aligncenter">
-  <form method='post' name='login_frm' action=<?php print_quote($app->url.'login?ref='.$app->request_uri) ?> >
+  <form method="post" name="login-form" name="login-form" action=<?php print_quote($app->url.'login?ref='.$app->request_uri) ?> >
     <p>اسم المستخدم</p>
-    <input name='user' type='text'/>
+    <input type="text" name="user" />
     <p>Password</p>
-    <input name='password' type='password'>
-    <input type=submit value='ولوج' />
+    <input type="password" name="password" />
+    <input type="submit" value="ولوج" />
   </form>
 </div>

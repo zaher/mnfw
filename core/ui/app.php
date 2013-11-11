@@ -577,7 +577,7 @@ class App {
   }
 
   public function set_cookie($name, $value) {
-    setcookie($name, $value, $this->cookie_expire, $this->url, $this->domain);
+    setcookie($name, $value, time()+3600, $this->url); //do not add domain, Opera have problem with it
   }
 
   //Run will send the header footer for page
@@ -824,4 +824,3 @@ function exception_error_handler($errno, $errstr, $errfile, $errline ) {
 set_error_handler("exception_error_handler");
 */
 ?>
-

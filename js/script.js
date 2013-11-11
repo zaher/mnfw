@@ -1,5 +1,4 @@
 "use strict";
-
 /**
 *
 *  do_it: add to the action
@@ -8,11 +7,14 @@
 
 function ajaxSubmitForm(event, do_it, requires, container)
 {
-  var form = event.target;
+  event.preventDefault();
 
-  if (requires.length > 0) {
+  var form = $(event.target);
+
+  if (requires.fields.length > 0) {
     validateForm(event, requires);
   }
+  alert("ajaxSubmitForm");
 
   var url = form.action;
 
@@ -20,8 +22,8 @@ function ajaxSubmitForm(event, do_it, requires, container)
 
   formData = "_ajax_=1&" + formData;
 
-  if (do_it !== undefined) {
-    formData = "do=" + do_it + formData;
+  if (do_it) {
+    formData = "do=" + do_it + "&" +formData;
   }
 
   $.ajax({
@@ -29,15 +31,13 @@ function ajaxSubmitForm(event, do_it, requires, container)
       url: form.action,
       data: formData,
       success: function(data) {
+      if (container)
         $(container).empty().append(data);
       }
   });
-
-  event.preventDefault();
 }
 
 function ajaxAttachForm(id, do_it, requires, container) {
-//  document.getElementByName(id).onclick = ajaxSubmitForm;
   var form = $(id) || null;
   if (form !== null) {
     form.submit(function(event){
@@ -63,7 +63,13 @@ function attachForm(id, requires) {
 }
 
 function validateForm(event, requires) {
-
+  alert("validateForm");
+  $.each(requires.fields, function(i, field) {
+    if ($(field).val.length == 0) {
+      alert(field.name + ' is required');
+      event.preventDefault();
+    }
+  })
 }
 
 function showFormError(form, error) {
