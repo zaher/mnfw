@@ -14,6 +14,10 @@ function __($word) {
 
 require_once(__DIR__.'/ui.php');
 
+/**
+*  Script Class
+*/
+
 class Script {
   public $name = '';
   public $code = '';
@@ -31,6 +35,62 @@ class Script {
   <?php
   }
 }
+
+/**
+*  Request Class
+*/
+
+  class Request {
+    private $_request_;
+
+    function __construct($request) {
+
+      if (!is_array($request))
+        throw new Exception('Must be array');
+      $this->_request_ = $request;
+    }
+
+    function __destruct() {
+    }
+
+    public function __set($name, $value) {
+      throw new Exception($name.' is read only');
+    }
+
+    public function &__get($name) {
+      if (array_key_exists($name, $this->_request_))
+        return $this->_request_[$name];
+      else
+        return null;
+    }
+
+    public function __isset($name)
+    {
+      return array_key_exists($name, $this->_request_);
+    }
+
+    public function __unset($name)
+    {
+    }
+
+    public function is_exists($name)
+    {
+      return array_key_exists($name, $this->_request_);
+    }
+
+    /* Copy the current element as new object */
+    public function branch($name) {
+      if (isset($this->$name))
+        return new Request($this->$name);
+      else
+        return null;
+    }
+  }
+
+
+/**
+*  JS Class
+*/
 
 class JS {
   protected $app = null;
@@ -149,6 +209,7 @@ class App {
   public $conf = array();
   public $db = null;
   public $js = null;
+  public $req = null;
   public $page = null;
 
   public $root = ''; //the root dir of ur application site
@@ -181,6 +242,7 @@ class App {
 
   public $domain = '';
   public $url ='';
+  public $request_uri ='';
 
   public $redirect_delay = 0;//1.5;
 
@@ -197,6 +259,8 @@ class App {
 */
 
   function __construct($root, $app_dir, $title, $name = '') {
+
+    $this->request_uri = $_SERVER['REQUEST_URI'];
     $this->root = inc_delimiter($root); //TODO: we must check if / terminated
     $this->app_dir = inc_delimiter($app_dir);
 
@@ -248,6 +312,7 @@ class App {
     }
 
     $this->js = new JS($this);
+    $this->req = new Request($_REQUEST);
     $this->db = new Database($this);
     $this->user = new User($this);
     $this->page = new Page($this);
@@ -263,7 +328,16 @@ class App {
 
   }
 
+  public function add_js($name) {
+    $this->scripts[] = 'js/'.$name;
+  }
+
+  public function add_css($name) {
+    $this->styles[] = 'css/'.$name;
+  }
+
   public function make_globals() {
+    $GLOBALS['app'] = &$this;
     $GLOBALS['conf'] = &$this->conf;
     $GLOBALS['user'] = &$this->user;
     $GLOBALS['db'] = &$this->db;
@@ -445,8 +519,6 @@ class App {
     } catch (Exception $e) {
       $this->send_header();
       echo htmlentities($e->getMessage(), ENT_COMPAT); // ENT_HTML5
-      if (function_exists('xdebug_is_enabled'))
-        xdebug_break();
       $this->send_footer();
     }
 
@@ -510,16 +582,16 @@ class App {
 
   //Run will send the header footer for page
   public function run() {
-    if (isset($_GET['id']))
-      $page = $_GET['id'];
+    if (isset($_GET['_id_']))
+      $page = $_GET['_id_'];
     else
       $page = '';
     $this->send_html($page);
   }
 
   public function execute() {
-    if (isset($_GET['id']))
-      $page = $_GET['id'];
+    if (isset($_GET['_id_']))
+      $page = $_GET['_id_'];
     else
       $page = '';
     $this->send_page($page);
@@ -604,7 +676,7 @@ class User {
     return $ok;
   }
 
-  function logout()
+  public function logout()
   {
     //do_logout();
     global $app;
@@ -670,34 +742,6 @@ class User {
 *
 */
 
-function get_request($name, &$value, $default = '')
-{
-  if (array_key_exists($name, $_REQUEST))
-  {
-    $value = $_REQUEST[$name];
-    return true;
-  }
-  else
-  {
-    $value = $default;
-    return false;
-  }
-}
-
-function get_value($array, $name, &$value)
-{
-  if (array_key_exists($name, $array))
-  {
-    $value = $array[$name];
-    return true;
-  }
-  else
-  {
-    $value = '';
-    return false;
-  }
-}
-
 function redirect($redirect_url)
 {
   if (empty($redirect_url))
@@ -757,7 +801,7 @@ function url_page($page, $params = null, $dir = null, $domain = null)
     if (use_url_page)
       $r = $r.$page;
     else
-      $r = $r.'?'.'id='.$page;
+      $r = $r.'?'.'_id_='.$page;
   }
 
   if (!isempty($params))
@@ -780,3 +824,4 @@ function exception_error_handler($errno, $errstr, $errfile, $errline ) {
 set_error_handler("exception_error_handler");
 */
 ?>
+

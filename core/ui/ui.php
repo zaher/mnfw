@@ -28,6 +28,16 @@ function print_quote($v, $q='"') {
 }
 
 /**
+* Test the value then print "value" with quote
+* Example: print_param(', ', $value)
+*/
+
+function print_param($before, $v, $q='"') {
+  if (isset($v))
+    print $before.$q.$v.$q;
+}
+
+/**
 * Test the value then print name="value" with quote
 * Useful for generate HTML
 */
@@ -150,6 +160,16 @@ function _print_value($name, $value, $q='"') {
     public function process() {
       $this->do_process();
     }
+
+    public function get_name() {
+      global $app;
+      if (isset($this->name)) {
+        $name = $this->name;
+        if (isset($app->page->form))
+          $name = 'form['.$name.']';
+      }
+      return $name;
+    }
   }
 
 /**
@@ -160,6 +180,14 @@ function _print_value($name, $value, $q='"') {
 
     public $requires = array();
 
+    function get_action() {
+      $action = $this->action;
+      if (isset($this->do)) {
+        $action = $action.'?do='.$this->do; //TODO Check for ? or &
+      }
+      return $action;
+    }
+
     public function do_open() {
       global $app;
       $app->page->form = $this; //TODO check of it is exists
@@ -168,7 +196,11 @@ function _print_value($name, $value, $q='"') {
       ?>
       <label <?php print_value('for', $this->name); ?> > <?php print $this->label; ?></label>
       <?php }  ?>
-      <form <?php print_value('method', $this->method); _print_value('name', $this->name); _print_value('id', $this->id); _print_value('action', $this->action); ?>>
+      <form <?php
+        print_value('method', $this->method);
+        _print_value('name', $this->name);
+        _print_value('id', $this->id);
+        _print_value('action', $this->get_action()); ?>>
       <?php
     }
 
@@ -184,7 +216,14 @@ function _print_value($name, $value, $q='"') {
     }
   }
 
+/** Ajax form */
+
   class AjaxFormView extends FormView {
+
+    function get_action() {
+      return $this->action;
+    }
+
     public function do_open() {
     ?>
     <div>
@@ -201,7 +240,12 @@ function _print_value($name, $value, $q='"') {
     <?php
     } */
     ?>
-    <script>ajaxAttachForm(<?php print_quote('#'.$this->id); if (isset($this->container)) { print(', '); print_quote('#'.$this->container); } ?>)</script>
+    <script>ajaxAttachForm(<?php
+        print_quote('#'.$this->id);
+        print_param(', ', $this->do);
+        print_param(', ', $this->container);
+      ?>)
+    </script>
     </div>
     <?php
     }
@@ -220,7 +264,7 @@ function _print_value($name, $value, $q='"') {
       <label for=<?php print_quote($this->name); ?> > <?php print $this->label; ?></label>
       <?php }
       ?>
-      <select id=<?php print_quote($this->name) ?> name=<?php print_quote($this->name) ?>>
+      <select id=<?php print_quote($this->name) ?> name=<?php print_quote($this->get_name()) ?>>
       <?php
         if ($this->add_empty) {
           print "<option value=''></option>";
@@ -252,7 +296,7 @@ function _print_value($name, $value, $q='"') {
         else
           $type = 'text';
       ?>
-      <input <?php print_value('type', $type); _print_value('class', $this->class); _print_value('id', $this->id); _print_value('name', $this->name); _print_value('value', $this->value); ?> />
+      <input <?php print_value('type', $type); _print_value('class', $this->class); _print_value('id', $this->id); _print_value('name', $this->get_name()); _print_value('value', $this->value); ?> />
       <?php
     }
   }

@@ -11,6 +11,7 @@
   }
 ?>
 <?php
+  $app->add_css('controls.css');
   $app->page->title = 'Login Page';
   $app->send_header();
   if (!empty($err)) {
@@ -19,8 +20,8 @@
 <?php
   }
 ?>
-<div class="login-panel">
-  <form method='post' name='login_frm' action=<?php print_quote($app->url.'login?ref='.$app->get_ref()) ?> >
+<div class="login aligncenter">
+  <form method='post' name='login_frm' action=<?php print_quote($app->url.'login?ref='.$app->request_uri) ?> >
     <p>اسم المستخدم</p>
     <input name='user' type='text'/>
     <p>Password</p>
