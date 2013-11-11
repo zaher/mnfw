@@ -277,9 +277,11 @@ function _print_value($name, $value, $q='"') {
     public function do_open() {
     ?>
     <div>
-    <div class="error-panel" style="display:none">Error</div>
     <?php
       parent::do_open();
+      ?>
+      <p class="message-panel" style="display:none"></p>
+      <?php
     }
     public function do_close() {
       parent::do_close();

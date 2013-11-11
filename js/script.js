@@ -12,9 +12,9 @@ function ajaxSubmitForm(event, do_it, requires, container)
   var form = $(event.target);
 
   if (requires.fields.length > 0) {
-    validateForm(event, requires);
+    if (!validateForm(event, requires))
+      return;
   }
-  alert("ajaxSubmitForm");
 
   var url = form.action;
 
@@ -63,13 +63,36 @@ function attachForm(id, requires) {
 }
 
 function validateForm(event, requires) {
-  alert("validateForm");
-  $.each(requires.fields, function(i, field) {
-    if ($(field).val.length == 0) {
-      alert(field.name + ' is required');
+
+  var form = $(event.target);
+  var err = true;
+  requires.fields.forEach(function(field) {
+
+    var f = form.find("#"+field);
+    var v = $(f).val();
+
+    if (!v) {
+      f.addClass('required');
+      err = false;
       event.preventDefault();
     }
-  })
+    else
+      f.removeClass('required');
+  });
+  var m = form.find('.message-panel');
+  if (m) {
+    if (!err) {
+      m.addClass('required');
+      m.empty().append('Error Message');
+      m.show(200);
+    }
+    else {
+      m.hide(200);
+      m.removeClass('required');
+      m.empty(200);
+    }
+  }
+  return err;
 }
 
 function showFormError(form, error) {
