@@ -1,4 +1,5 @@
 <?php
+
 /**
 *  Base class of framework.
 */
@@ -123,6 +124,32 @@ class JS {
 
 }
 
+/**
+*  Theme Class
+*/
+
+class Theme {
+  protected $app = null;
+  public $name = '';
+  public $options = array();
+  public $show_header = true;
+
+  public $show_description = true;
+  public $show_sidebar = false;
+  public $show_footerbar = false;
+
+  function __construct($app) {
+    $this->app = $app;
+  }
+
+  function __destruct() {
+  }
+}
+
+/**
+*  Database class
+*/
+
 class Database {
 
   public $connection = null;
@@ -131,7 +158,6 @@ class Database {
 
   function __construct($app) {
     $this->app = $app;
-    $app->require_file($app->core_dir.'db/classes.php');
   }
 
   function __destruct() {
@@ -145,6 +171,8 @@ class Database {
 
   public function open() {
     global $app;
+
+    $app->require_file($app->core_dir.'db/classes.php');
 
     if (!empty($this->connection))
       throw new Exception('Already open');
@@ -168,8 +196,11 @@ class Database {
   }
 }
 
-class Page {
-  protected $app = null;
+/**
+*  Page Class
+*/
+
+class Page extends View {
 
   public $title = '';
   public $description = '';
@@ -178,17 +209,11 @@ class Page {
   public $form = null;
 //  public $forms = array();
 
-  function __construct($app) {
-  }
-
-  function __destruct() {
-  }
-  
-  public function open() {    
+  public function do_open() {
   
   }
   
-  public function close() {
+  public function do_close() {
     
   }
 }
@@ -212,6 +237,7 @@ class App {
   public $js = null;
   public $req = null;
   public $page = null;
+  public $theme = null;
 
   public $root = ''; //the root dir of ur application site
 /**
@@ -285,9 +311,12 @@ class App {
 
     $this->meta['Content-Type'] = 'text/html; charset=utf-8';
 
-    $this->safe_use('config');
-
-    $this->libs['ui'] = $this->core_dir.'ui/ui.php';
+    $this->js = new JS($this);
+    $this->req = new Request($_REQUEST);
+    $this->theme = new Theme($this);
+    $this->page = new Page();
+    $this->db = new Database($this);
+    $this->user = new User($this);
 
     $this->init();
 
@@ -299,11 +328,16 @@ class App {
   }
 
   protected function init() {
+
+    $this->safe_use('config');
+
     //not needed but for backlegacy
     define('_APP_', $this->app_dir);
     define('_ROOT_', $this->fw_dir);
 
-    //auto detect style
+    $this->libs['ui'] = $this->core_dir.'ui/ui.php';
+
+//auto detect style
     if (file_exists($this->root.'style.css')) {
       $this->styles['style'] = $this->url.'style.css';
     } else if (file_exists($this->root.'css/style.css')) {
@@ -324,12 +358,6 @@ class App {
     } else if (file_exists($this->root.'js/script.js')) {
       $this->scripts['app_script'] = $this->url.'js/script.js';
     }
-
-    $this->js = new JS($this);
-    $this->req = new Request($_REQUEST);
-    $this->db = new Database($this);
-    $this->user = new User($this);
-    $this->page = new Page($this);
 
     if (isempty($this->conf['type']))
       $this->conf['type'] = 'mysql';
@@ -411,7 +439,8 @@ class App {
   }
 
   public function safe_use($name) {
-    global $app;
+//    global $app;
+    $app = &$this;
     $conf = &$this->conf;
 
     $f = $this->get_use_file($name);
