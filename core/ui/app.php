@@ -196,6 +196,7 @@ class Page {
 class App {
   protected $is_sent = false;
   protected $last_page = ''; //Last page was sent
+  public $debug = false;
   public $ref = '';
 
   public $user = null;//User
@@ -242,7 +243,6 @@ class App {
 
   public $domain = '';
   public $url ='';
-  public $request_uri ='';
 
   public $redirect_delay = 0;//1.5;
 
@@ -259,6 +259,13 @@ class App {
 */
 
   function __construct($root, $app_dir, $title, $name = '') {
+
+    if (function_exists('xdebug_is_enabled')) {
+      $this->debug = true;
+    }
+
+    $this->is_ajax = array_key_exists('_ajax_', $_REQUEST);
+    $this->ref = $_REQUEST['ref'];
 
     $this->request_uri = $_SERVER['REQUEST_URI'];
     $this->root = inc_delimiter($root); //TODO: we must check if / terminated
@@ -302,6 +309,13 @@ class App {
     } else if (file_exists($this->root.'css/style.css')) {
       $this->styles['style'] = $this->url.'css/style.css';
     }
+
+//    $this->scripts['weinre'] = 'http://192.168.0.1:8080/target/target-script-min.js#anonymous';
+//    $this->scripts['jquery'] = $this->fw_url.'js/jquery.js'; //or
+    if ($this->debug)
+      $this->scripts['jquery'] = '//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js';
+    else
+      $this->scripts['jquery'] = '//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js';
 
     $this->scripts['fw_script'] = $this->fw_url.'js/script.js';
 
@@ -495,7 +509,9 @@ class App {
       $this->safe_send($page);
       $this->safe_send('bottom.html');
     } catch (Exception $e) {
+      ?> <pre dir="rtl"> <?php
       echo htmlentities($e->getMessage(), ENT_HTML5);
+      ?> </pre> <?php
       $this->send_footer();
     }
 //    finally { }
@@ -559,6 +575,9 @@ class App {
       return $_POST['ref'];
   }
 
+  public function post_redirect($redirect_url) {
+    echo '<script type="text/javascript">location.href="'.$redirect_url.'";</script>';
+  }
   public function redirect($redirect_url) {
 
     if (empty($redirect_url))
@@ -728,7 +747,12 @@ class User {
     }
     else
     {
-      $app->safe_send('login');
+      if ($app->is_ajax)
+        $app->post_redirect($app->url.'login?ref='.$app->request_uri);
+      else {
+        $app->ref = $app->request_uri;
+        $app->safe_send('login');
+      }
     }
     if (!check_level($level, $this->level))
     {

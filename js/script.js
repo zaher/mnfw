@@ -5,15 +5,17 @@
 *  requires: object have array of requires fields to check it
 */
 
-function ajaxSubmitForm(event, do_it, requires, container)
-{
-  event.preventDefault();
+function ajaxSubmitForm(form, event, do_it, requires, container) {
 
-  var form = $(event.target);
+//  debugger;
+
+//  var form = $(event.target);
 
   if (requires.fields.length > 0) {
-    if (!validateForm(event, requires))
+    if (!validateForm(event, requires)) {
+      event.preventDefault();
       return;
+    }
   }
 
   var url = form.action;
@@ -23,25 +25,26 @@ function ajaxSubmitForm(event, do_it, requires, container)
   formData = "_ajax_=1&" + formData;
 
   if (do_it) {
-    formData = "do=" + do_it + "&" +formData;
+    formData = "do=" + do_it + "&" + formData;
   }
 
   $.ajax({
-      type: form.method,
-      url: form.action,
+      type: form.attr('method'),
+      url: form.attr('action'),
       data: formData,
       success: function(data) {
       if (container)
         $(container).empty().append(data);
       }
   });
+  event.preventDefault();
 }
 
 function ajaxAttachForm(id, do_it, requires, container) {
   var form = $(id) || null;
   if (form !== null) {
     form.submit(function(event){
-        ajaxSubmitForm(event, do_it, requires, container);
+        ajaxSubmitForm(form, event, do_it, requires, container);
       })
   }
   else {
@@ -50,11 +53,11 @@ function ajaxAttachForm(id, do_it, requires, container) {
 }
 
 function attachForm(id, requires) {
-//  document.getElementByName(id).onclick = ajaxSubmitForm;
   var form = $(id) || null;
   if (form !== null) {
     form.submit(function(event){
-        validateForm(event, requires);
+        if (!validateForm(event, requires))
+          event.preventDefault();
       })
   }
   else {

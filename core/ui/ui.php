@@ -4,15 +4,20 @@
 * $value is an attrubute of this object but you can pass render function instead of it
 */
 
-$form = null;
+function view($object_or_class, $attributes = null) {
+  if (is_object($object_or_class))
+    return $object_or_class;
+  else
+    return new $object_or_class(null, $attributes);
+}
 
-function render($class, $value = null, $func = null) {
+function render($parent, $class, $value = null, $func = null) {
   if (is_array($value))
     $attributes = $value;
   else
     $attributes = null;
 
-  $object = new $class($attributes);
+  $object = new $class($parent, $attributes);
 
   if (is_callable($value)) {
     $value($object);
@@ -20,7 +25,9 @@ function render($class, $value = null, $func = null) {
 
   if (is_callable($func))
     $object->render_func = $func;
-  $object->render();
+  $object->render(null);
+
+  return $object;
 }
 
 function print_quote($v, $q='"') {
@@ -73,10 +80,12 @@ function _print_value($name, $value, $q='"') {
     public $attributes = array();
     public $render_func = null;
 
-    function __construct($attributes) {
+    function __construct($parent = null, $attributes = null) {
 
-      if (isset($attributes))
-        $this->attributes = $attributes;
+    $this->parent = $parent;
+
+    if (isset($attributes))
+      $this->attributes = $attributes;
 
 /*    //another way, we will not use it.
       foreach($attributes as $attribute => $value) {
@@ -147,8 +156,11 @@ function _print_value($name, $value, $q='"') {
         $this->do_close();
     }
 
-    public function render() {
+    public function render($func = null) {
       $this->open();
+
+      if (is_callable($func))
+        $func($this);
 
       $render_func = $this->render_func;
       if (is_callable($render_func))
@@ -224,6 +236,7 @@ function _print_value($name, $value, $q='"') {
         print_value('method', $this->method);
         _print_value('name', $this->name);
         _print_value('id', $this->id);
+        _print_value('class', $this->class);
         _print_value('action', $this->get_action()); ?>>
       <?php
     }
@@ -329,6 +342,7 @@ function _print_value($name, $value, $q='"') {
 
     public function do_render() {
       global $app;
+
       if ($this->is_require) {
         if (isset($app->page->form))
           $app->page->form->requires[] = $this->name;
@@ -347,43 +361,43 @@ function _print_value($name, $value, $q='"') {
     }
   }
 
+  class TableView extends View {
+
+    public function do_open() {
+      if (isset($this->label)) {
+      ?>
+      <label <?php print_value('for', $this->name); ?> > <?php print $this->label; ?></label>
+      <?php }  ?>
+      <table <?php
+        print_value('name', $this->name);
+        _print_value('class', $this->class);
+        _print_value('id', $this->id);
+        _print_value('', $this->get_action()); ?>>
+      <?php
+
+    }
+
+    public function do_close() {
+      ?>
+      </table>
+      <?php
+    }
+
+    public function do_render() {
+
+    }
+
+  }
+
 /**
 *  Functions
 */
 
-function OpenDiv($class = '', $id='') {
+function open_div($class = '', $id='') {
   print('<div'); _print_value('class', $class); _print_value('id', $id); print('>');
 }
 
-function CloseDiv() {
+function close_div() {
   print('</div>');
 }
 
-/**
-*  $values is array, if you get it from PDO use PDO::FETCH_KEY_PAIR
-*/
-
-function print_select($name, $values, $attribs) {
-  $label = $attribs['label'];
-  $class = $attribs['class'];
-  $selected = $attribs['selected'];
-  $empty = $attribs['empty'];
-  if (isset($label)) {
-  ?>
-  <label for=<?php print_quote($name); ?> > <?php print $label; ?></label>
-  <?php } ?>
-  <select id=<?php print_quote($name) ?> name=<?php print_quote($name) ?>>
-  <?php
-    if ($empty) {
-      print "<option value=''></option>";
-    }
-    if (isset($values)) {
-    foreach($values as $id => $value)
-      print "<option value='".$id."'>".$value."</option>";
-  ?>
-  </select>
-<?php
-  }
-}
-
-?>
