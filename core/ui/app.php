@@ -133,10 +133,12 @@ class Theme {
   public $name = '';
   public $options = array();
   public $show_header = true;
+  public $show_title = true;
 
   public $show_description = true;
   public $show_sidebar = false;
   public $show_footerbar = false;
+  public $show_logo_image = true;
 
   function __construct($app) {
     $this->app = $app;
@@ -625,7 +627,9 @@ class App {
   }
 
   public function set_cookie($name, $value) {
-    setcookie($name, $value, time()+3600, $this->url); //do not add domain, Opera have problem with it
+    setcookie($name, $value);
+    //, "", $this->url); //do not add domain, Opera have problem with it
+    //or time()+3600
   }
 
   //Run will send the header footer for page

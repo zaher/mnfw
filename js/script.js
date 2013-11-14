@@ -5,17 +5,15 @@
 *  requires: object have array of requires fields to check it
 */
 
-function ajaxSubmitForm(form, event, do_it, requires, container) {
+function ajaxSubmitForm(event, do_it, requires, container) {
 
 //  debugger;
 
-//  var form = $(event.target);
+  var form = $(event.target);
 
-  if (requires.fields.length > 0) {
-    if (!validateForm(event, requires)) {
-      event.preventDefault();
+  if (!validateForm(event, requires)) {
+    event.preventDefault();
       return;
-    }
   }
 
   var url = form.action;
@@ -44,7 +42,7 @@ function ajaxAttachForm(id, do_it, requires, container) {
   var form = $(id) || null;
   if (form !== null) {
     form.submit(function(event){
-        ajaxSubmitForm(form, event, do_it, requires, container);
+        ajaxSubmitForm(event, do_it, requires, container);
       })
   }
   else {
@@ -67,35 +65,40 @@ function attachForm(id, requires) {
 
 function validateForm(event, requires) {
 
-  var form = $(event.target);
-  var err = true;
-  requires.fields.forEach(function(field) {
+  if ((requires.fields) && (requires.fields.length > 0)) {
 
-    var f = form.find("#"+field);
-    var v = $(f).val();
+    var form = $(event.target);
+    var err = true;
+    requires.fields.forEach(function(field) {
 
-    if (!v) {
-      f.addClass('required');
-      err = false;
-      event.preventDefault();
+      var f = form.find("#"+field);
+      var v = $(f).val();
+
+      if (!v) {
+        f.addClass('required');
+        err = false;
+        event.preventDefault();
+      }
+      else
+        f.removeClass('required');
+    });
+    var m = form.find('.message-panel');
+    if (m) {
+      if (!err) {
+        m.addClass('required');
+        m.empty().append('Error Message');
+        m.show(200);
+      }
+      else {
+        m.hide(200);
+        m.removeClass('required');
+        m.empty(200);
+      }
     }
-    else
-      f.removeClass('required');
-  });
-  var m = form.find('.message-panel');
-  if (m) {
-    if (!err) {
-      m.addClass('required');
-      m.empty().append('Error Message');
-      m.show(200);
-    }
-    else {
-      m.hide(200);
-      m.removeClass('required');
-      m.empty(200);
-    }
+    return err;
   }
-  return err;
+  else
+    return true;
 }
 
 function showFormError(form, error) {
