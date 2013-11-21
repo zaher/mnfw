@@ -1,197 +1,18 @@
 <?php
-/**
-* Render create the object and pass attributes to it
-* $value is an attrubute of this object but you can pass render function instead of it
-*/
-
-function view($object_or_class, $attributes = null) {
-  if (is_object($object_or_class))
-    return $object_or_class;
-  else
-    return new $object_or_class(null, $attributes);
-}
-
-function render($parent, $class, $value = null, $func = null) {
-  if (is_array($value))
-    $attributes = $value;
-  else
-    $attributes = null;
-
-  $object = new $class($parent, $attributes);
-
-  if (is_callable($value)) {
-    $value($object);
-  }
-
-  if (is_callable($func))
-    $object->render_func = $func;
-  $object->render(null);
-
-  return $object;
-}
-
-function print_quote($v, $q='"') {
-  print $q.$v.$q;
-}
-
-/**
-* Test the value then print "value" with quote
-* Example: print_param(', ', $value)
-*/
-
-function print_param($before, $v, $force = false, $q = '"') {
-  if ($force || isset($v))
-    print $before.$q.$v.$q;
-}
-
-/**
-* Test the value then print name="value" with quote
-* Useful for generate HTML
-*/
-
-function print_value($name, $value, $extra = '', $q='"')
-{
-  if (isset($value) && !empty($value))
-  {
-    if (!empty($name))
-      print($name.'=');
-    print_quote($value.$extra);
-  }
-}
-
-/**
-* Same above but add space before printing
-*/
-function _print_value($name, $value, $q='"') {
-  if (isset($value) && !empty($value))
-    print " ";
-  print_value($name, $value, '', $q);
-}
 
 /**
 *   Base Classes
 */
 
-  class View {
-
-    protected $app = null;
-    public $parent = null;
-
-    public $attributes = array();
-    public $render_func = null;
-
-    function __construct($parent = null, $attributes = null) {
-
-    $this->parent = $parent;
-
-    if (isset($attributes))
-      $this->attributes = $attributes;
-
-/*    //another way, we will not use it.
-      foreach($attributes as $attribute => $value) {
-        $this->$attribute = $value;
-      }*/
-
-      if (method_exists($this, 'init')) //only for user define classes in his project
-      {
-        $new = $this->init();
-        if (isset($new)) {
-          $this->attributes = array_merge($this->attributes, $new);
-        }
-      }
-    }
-
-    function __destruct() {
-    }
-
-
-    function __call($method, $args) {
-
-      if(is_callable($this->methods[$method]))
-      {
-        return call_user_func_array($this->methods[$method], $args);
-      }
-    }
-/*
-*  http://php.net/manual/en/language.oop5.overloading.php
-*/
-
-    public function __set($name, $value) {
-      $this->attributes[$name] = $value;
-    }
-
-    public function &__get($name) {
-      return $this->attributes[$name];
-    }
-
-    public function __isset($name)
-    {
-      return array_key_exists($name, $this->attributes);
-    }
-
-    public function __unset($name)
-    {
-      unset($this->attributes[$name]);
-    }
-
-    function __toString() {
-      //TODO
-    }
-
-    public function call($func) {
-    /* not now
-      $f = \Closure::bind($func, $this, get_class());
-      $f();
-      */
-      $func();
-    }
-
-    public function open() {
-      if (method_exists($this, 'do_open'))
-        $this->do_open();
-    }
-
-    public function close() {
-      if (method_exists($this, 'do_close'))
-        $this->do_close();
-    }
-
-    public function render($func = null) {
-      $this->open();
-
-      if (is_callable($func))
-        $func($this);
-
-      $render_func = $this->render_func;
-      if (is_callable($render_func))
-        $render_func($this);
-
-      if (method_exists($this, 'do_render'))
-        $this->do_render();
-
-      $this->close();
-    }
-
-    public function process() {
-      $this->do_process();
-    }
-
-    public function get_name() {
-      global $app;
-      if (isset($this->name)) {
-        $name = $this->name;
-        if (isset($app->page->form))
-          $name = 'form['.$name.']';
-      }
-      return $name;
-    }
-  }
-
 /**
 *  Form Class
 */
+  class ContainerView extends View {
+    public $views = array(); //For postpond render object
 
-  class FormView extends View {
+  }
+
+  class FormView extends ContainerView {
 
     public $requires = array();
 
@@ -323,7 +144,7 @@ function _print_value($name, $value, $q='"') {
       <label for=<?php print_quote($this->name); ?> > <?php print $this->label; ?></label>
       <?php }
       ?>
-      <select id=<?php print_quote($this->name) ?> name=<?php print_quote($this->get_name()) ?>>
+      <select id=<?php print_quote($this->id) ?> name=<?php print_quote($this->get_name()) ?>>
       <?php
         if ($this->add_empty) {
           print "<option value=''></option>";
@@ -386,7 +207,42 @@ function _print_value($name, $value, $q='"') {
     public function do_render() {
 
     }
+  }
 
+/**
+*  Ref: http://botmonster.com/jquery-bootpag
+*/
+  class PaginationView extends View {
+
+    public function created(){
+      global $app;
+      $app->need('jquery');
+      //$this->app->need('components');
+    }
+
+
+    public function do_render() {
+
+      if (isset($this->label)) {
+      ?>
+      <label for=<?php print_quote($this->name); ?> > <?php print $this->label; ?></label>
+      <?php }
+      ?>
+      <div class="pagination" id=<?php print_quote($this->id) ?> name=<?php print_quote($this->get_name()) ?>></div>
+      <script>
+        $('.pagination').bootpag({
+          total: <?php print($this->total) ?>
+          <?php _print_value("maxVisible", $this->max, ":", ",") ?>
+            }).on("page", function(event, num){
+            <?php
+              if (isset($this->post)) {
+                //somthing here to post
+              }
+            ?>
+        });
+      </script>
+      <?php
+    }
   }
 
 /**
@@ -401,3 +257,38 @@ function close_div() {
   print('</div>');
 }
 
+/**
+*   UI Lib Class
+*
+*/
+
+class jQueryLib extends Lib {
+  public function init() {
+    parent::init();
+//    $this->scripts['weinre'] = 'http://192.168.0.1:8080/target/target-script-min.js#anonymous';
+    if ($this->app->debug)
+      $this->app->add_js('jquery', $this->app->fw_url.'lib/jquery.js'); //or
+//      $this->app->scripts['jquery'] = '//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js';
+    else
+      $this->app->add_js('jquery', '//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js');
+  }
+}
+
+class UILib extends Lib {
+
+  function created() {
+    parent::created();
+    $this->app->need('jquery');
+  }
+
+  public function init() {
+    parent::init();
+//    $this->scripts['weinre'] = 'http://192.168.0.1:8080/target/target-script-min.js#anonymous';
+//    $this->scripts['jquery'] = $this->app->fw_url.'js/jquery.js'; //or
+    $this->app->scripts['ui'] = 'fw/js/script.js';
+    $this->app->scripts['pagination'] = 'fw/lib/jquery.bootpag.js';
+  }
+}
+
+$app->add_lib('jquery', new jQueryLib($app));
+$app->add_lib('ui', new UILib($app));

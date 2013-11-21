@@ -13,7 +13,128 @@ function __($word) {
   return $word;
 }
 
-require_once(__DIR__.'/ui.php');
+//require_once(__DIR__.'/ui.php');
+
+class View {
+
+  protected $app = null;
+  public $parent = null;
+
+  public $attributes = array();
+  public $render_func = null;
+
+  function __construct($parent = null, $attributes = null) {
+
+    $this->parent = $parent;
+
+    if (isset($attributes))
+      $this->attributes = $attributes;
+
+  /*    //another way, we will not use it.
+      foreach($attributes as $attribute => $value) {
+        $this->$attribute = $value;
+      }*/
+
+      if (method_exists($this, 'init')) //only for user define classes in his project
+      {
+        $new = $this->init();
+        if (isset($new)) {
+          $this->attributes = array_merge($this->attributes, $new);
+      }
+    }
+    $this->created();
+  }
+
+  function __destruct() {
+  }
+
+
+  function __call($method, $args) {
+
+    if(is_callable($this->methods[$method]))
+    {
+      return call_user_func_array($this->methods[$method], $args);
+    }
+  }
+
+  public function created(){ //virtual
+
+  }
+/*
+*  http://php.net/manual/en/language.oop5.overloading.php
+*/
+
+  public function __set($name, $value) {
+    $this->attributes[$name] = $value;
+  }
+
+  public function &__get($name) {
+    return $this->attributes[$name];
+  }
+
+  public function __isset($name)
+  {
+    return array_key_exists($name, $this->attributes);
+  }
+
+  public function __unset($name)
+  {
+    unset($this->attributes[$name]);
+  }
+
+  function __toString() {
+    //TODO
+  }
+
+  public function call($func) {
+  /* not now
+    $f = \Closure::bind($func, $this, get_class());
+    $f();
+    */
+    $func();
+  }
+
+  public function open() {
+    if (method_exists($this, 'do_open'))
+      $this->do_open();
+  }
+
+  public function close() {
+    if (method_exists($this, 'do_close'))
+      $this->do_close();
+  }
+
+  public function render($func = null) {
+    $this->open();
+
+    if (is_callable($func))
+      $func($this);
+
+    $render_func = $this->render_func;
+    if (is_callable($render_func))
+      $render_func($this);
+
+    if (method_exists($this, 'do_render'))
+      $this->do_render();
+
+    $this->close();
+  }
+
+  public function process() {
+    $this->do_process();
+  }
+
+  public function get_name() {
+    global $app;
+    if (isset($this->name)) {
+      $name = $this->name;
+      if (isset($app->contents->form))
+        $name = 'form['.$name.']';
+    }
+    return $name;
+  }
+}
+
 
 /**
 *  Script Class
@@ -90,41 +211,6 @@ class Script {
 
 
 /**
-*  JS Class
-*/
-
-class JS {
-  protected $app = null;
-  public $scripts = array();
-
-  function __construct($app) {
-    $this->app = $app;
-  }
-
-  function __destruct() {
-  }
-
-  public function add($name, $code) {
-    $script = new Script($name, $code);
-    if (array_key_exists($name, $this->scripts))
-      throw new Exception($name.' is already exists');
-
-    $this->scripts[$name] = $script;
-  }
-
-  public function use_it($name, $force = false) {
-    if (!array_key_exists($name, $this->scripts))
-      throw new Exception($name.' is not exists');
-    $script = $this->scripts[$name];
-    if ($force || !$script->is_used) {
-      $script->render();
-      $script->is_used = true;
-    }
-  }
-
-}
-
-/**
 *  Theme Class
 */
 
@@ -146,6 +232,112 @@ class Theme {
 
   function __destruct() {
   }
+}
+
+/**
+*  LIB Class
+*/
+
+class Lib {
+  public $used = false;
+  public $name = '';
+  public $options = array();
+
+  protected $app = null;
+
+  function __construct($app) {
+    $this->app = $app;
+  }
+
+  function __destruct() {
+  }
+
+  public function preinit() {
+  }
+
+  public function init() {
+  }
+
+  public function finish() {
+  }
+
+  public function trigger($args) {
+  }
+
+  public function need() {
+  }
+
+  public function print_head() {
+  }
+}
+/***/
+class Libs {
+  protected $app = null;
+  protected $items = array();
+
+  function __construct($app) {
+    $this->app = $app;
+    $this->created();
+  }
+
+  function __destruct() {
+  }
+
+  function created() {
+  }
+
+  public function add($name, $lib) {
+    if (!($lib instanceof Lib))
+      throw new Exception('It is not instance of Lib');
+
+    if (array_key_exists($name, $this->items))
+      throw new Exception($name . ' lib is already exists');
+
+    $this->items[$name] = $lib;
+  }
+
+
+  public function preinit() {
+    foreach($this->items as $key => $item) {
+      $item->preinit();
+    }
+  }
+
+  public function init() {
+    foreach($this->items as $key => $item) {
+      $item->init();
+    }
+  }
+
+  public function finish() {
+    foreach($this->items as $key => $item) {
+      $item->finish();
+    }
+  }
+
+  public function print_head() {
+    foreach($this->items as $key => $item) {
+      $item->print_head();
+    }
+  }
+
+
+  public function trigger($args) {
+    foreach($this->items as $key => $item) {
+      $item->trigger($args);
+    }
+  }
+
+  public function need($name) {
+    if (!array_key_exists($name, $this->items))
+      throw new Exception('"'.$name . '" lib not found');
+    $lib = $this->items[$name];
+    if (!$lib->used) {
+      $lib->need();
+      $lib->used = true;
+    }
+  }
+
 }
 
 /**
@@ -199,10 +391,10 @@ class Database {
 }
 
 /**
-*  Page Class
+*  Contents Class
 */
 
-class Page extends View {
+class Contents extends View {
 
   public $title = '';
   public $description = '';
@@ -230,15 +422,13 @@ class App {
   public $styles = array(); //css
   public $scripts = array(); //scripts file
   public $meta = array();
-  public $libs = array();
 
   public $name = '';
   public $title = '';
   public $conf = array();
   public $db = null;
-  public $js = null;
   public $req = null;
-  public $page = null;
+  public $contents = null;
   public $theme = null;
 
   public $root = ''; //the root dir of ur application site
@@ -280,6 +470,8 @@ class App {
   protected $footer_sent = false;
   public $auto_send = true;
 
+  protected $libs;
+
 /**
 *  $root: Full path to your site dir
 *  $app_dir: Full path to direcory of application files may be under the root, file like "app" folder or "inc"
@@ -313,20 +505,31 @@ class App {
 
     $this->meta['Content-Type'] = 'text/html; charset=utf-8';
 
-    $this->js = new JS($this);
-    $this->req = new Request($_REQUEST);
-    $this->theme = new Theme($this);
-    $this->page = new Page();
-    $this->db = new Database($this);
-    $this->user = new User($this);
+    $this->libs = new Libs($this);
 
+    $this->safe_use('init');
+
+    $this->libs->preinit();
+
+    if (!isset($this->req))
+      $this->req = new Request($_REQUEST);
+    if (!isset($this->theme))
+      $this->theme = new Theme($this);
+    if (!isset($this->contents))
+      $this->contents = new Contents();
+    if (!isset($this->db))
+      $this->db = new Database($this);
+    if (!isset($this->user))
+      $this->user = new User($this);
+
+    $this->libs->init();
     $this->init();
 
   }
 
   function __destruct() {
-    if (isset($this->page))
-      $this->page->close();
+    if (isset($this->contents))
+      $this->contents->close();
   }
 
   protected function init() {
@@ -337,21 +540,12 @@ class App {
     define('_APP_', $this->app_dir);
     define('_ROOT_', $this->fw_dir);
 
-    $this->libs['ui'] = $this->core_dir.'ui/ui.php';
-
 //auto detect style
     if (file_exists($this->root.'style.css')) {
       $this->styles['style'] = $this->url.'style.css';
     } else if (file_exists($this->root.'css/style.css')) {
       $this->styles['style'] = $this->url.'css/style.css';
     }
-
-//    $this->scripts['weinre'] = 'http://192.168.0.1:8080/target/target-script-min.js#anonymous';
-//    $this->scripts['jquery'] = $this->fw_url.'js/jquery.js'; //or
-    if ($this->debug)
-      $this->scripts['jquery'] = '//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js';
-    else
-      $this->scripts['jquery'] = '//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js';
 
     $this->scripts['fw_script'] = $this->fw_url.'js/script.js';
 
@@ -371,13 +565,21 @@ class App {
       $this->lang = $this->conf['lang'];
 
   }
-
-  public function add_js($name) {
-    $this->scripts[] = 'js/'.$name;
+/** Add lib object */
+  public function add_lib($name, $lib) {
+    $this->libs->add($name, $lib);
   }
 
-  public function add_css($name) {
-    $this->styles[] = 'css/'.$name;
+/** Add full url to js */
+  public function add_js($name, $js) {
+    if (array_key_exists($name, $this->scripts))
+      throw new Exception($name.' is already exists');
+    $this->scripts[$name] = $js;
+  }
+
+/** Add full url to css */
+  public function add_css($css) {
+    $this->styles[] = $css;
   }
 
   public function make_globals() {
@@ -421,11 +623,8 @@ class App {
     return $f;
   }
 
-  public function use_lib($name) {
-    if (!array_key_exists($name, $this->libs))
-      throw new Exception($name . ' lib not found');
-    global $app;
-    require_once($this->libs[$name]);
+  public function need($name) {
+    $this->libs->need($name);
   }
 
   public function use_file($name) {
@@ -441,7 +640,7 @@ class App {
   }
 
   public function safe_use($name) {
-//    global $app;
+    //global $app;
     $app = &$this;
     $conf = &$this->conf;
 
@@ -468,13 +667,23 @@ class App {
       $this->make_globals();
       $user = &$this->user;
       $session = &$this->session;
+      $view = &$this->contents;
       global $app;
       global $session;
       global $user;
       global $conf;
+      global $view;
       include($f);
     }
   }
+
+  public function print_head() {
+    $this->send_meta();
+    $this->send_styles();
+    $this->send_scripts();
+    $this->libs->print_head();
+  }
+
 
   public function send_meta() {
     foreach ($this->meta as $name => $value) {
@@ -796,7 +1005,78 @@ class User {
 }
 
 /**
-*
+* Render create the object and pass attributes to it
+* $value is an attrubute of this object but you can pass render function instead of it
+*/
+
+//      $this->libs['ui'] = $this->core_dir.'ui/ui.php';
+
+function view($object_or_class, $attributes = null) {
+  if (is_object($object_or_class))
+    return $object_or_class;
+  else
+    return new $object_or_class(null, $attributes);
+}
+
+function render($parent, $class, $value = null, $func = null) {
+  if (is_array($value))
+    $attributes = $value;
+  else
+    $attributes = null;
+
+  $object = new $class($parent, $attributes);
+
+  if (is_callable($value)) {
+    $value($object);
+  }
+
+  if (is_callable($func))
+    $object->render_func = $func;
+  $object->render(null);
+
+  return $object;
+}
+
+function print_quote($v, $q='"') {
+  print $q.$v.$q;
+}
+
+/**
+* Test the value then print "value" with quote
+* Example: print_param(', ', $value)
+*/
+
+function print_param($before, $v, $force = false, $q = '"') {
+  if ($force || isset($v))
+    print $before.$q.$v.$q;
+}
+
+/**
+* Test the value then print name="value" with quote
+* Useful for generate HTML
+*/
+
+function print_value($name, $value, $extra = '', $q='"')
+{
+  if (isset($value) && !empty($value))
+  {
+    if (!empty($name))
+      print($name.'=');
+    print_quote($value.$extra);
+  }
+}
+
+/**
+* Same above but add space before printing
+*/
+function _print_value($name, $value, $q='"', $sep = '') {
+  if (isset($value) && !empty($value))
+    print " ".$sep;
+  print_value($name, $value, '', $q);
+}
+
+/**
+*  Trash
 */
 
 function redirect($redirect_url)
@@ -873,6 +1153,7 @@ function url_page($page, $params = null, $dir = null, $domain = null)
   }
   return $r;
 }
+
 
 /*
 function exception_error_handler($errno, $errstr, $errfile, $errline ) {
