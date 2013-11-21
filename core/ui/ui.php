@@ -232,10 +232,11 @@
       <script>
         $('.pagination').bootpag({
           total: <?php print($this->total) ?>
-          <?php _print_value("maxVisible", $this->max, ":", ",") ?>
+          <?php _print_value("maxVisible", $this->max, '', ":", ", ") ?>
             }).on("page", function(event, num){
             <?php
               if (isset($this->post)) {
+                print($this->post);
                 //somthing here to post
               }
             ?>

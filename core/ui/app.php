@@ -1056,23 +1056,24 @@ function print_param($before, $v, $force = false, $q = '"') {
 * Useful for generate HTML
 */
 
-function print_value($name, $value, $extra = '', $q='"')
+function print_value($name, $value, $extra = '', $q='"', $assign='=')
 {
   if (isset($value) && !empty($value))
   {
     if (!empty($name))
-      print($name.'=');
-    print_quote($value.$extra);
+      print($name.$assign);
+    print_quote($value.$extra, $q);
   }
 }
 
 /**
 * Same above but add space before printing
 */
-function _print_value($name, $value, $q='"', $sep = '') {
-  if (isset($value) && !empty($value))
-    print " ".$sep;
-  print_value($name, $value, '', $q);
+function _print_value($name, $value, $q='"', $assign='=', $sep = ' ') {
+  if (isset($value) && !empty($value)) {
+    print $sep;
+    print_value($name, $value, '', $q, $assign);
+  }
 }
 
 /**
